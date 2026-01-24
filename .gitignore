@@ -1,0 +1,13 @@
+# JetBrains
+.idea/
+
+# Clasp
+.clasp.json
+.clasprc.json
+
+# Dependencies
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db

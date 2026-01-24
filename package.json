@@ -1,0 +1,15 @@
+{
+  "name": "magikmail",
+  "version": "1.0.0",
+  "description": "",
+  "main": "Code.js",
+  "scripts": {
+    "push": "clasp push",
+    "watch": "clasp push --watch",
+    "open": "clasp open"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/google-apps-script": "^2.0.8"
+  }
+}
