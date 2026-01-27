@@ -1,5 +1,6 @@
 const JobRejectionHandler = {
     LABEL_NAME: "Job Rejection",
+    BATCH_SIZE: 100,
 
     /**
      * calls gemini api to classify a batch of emails
