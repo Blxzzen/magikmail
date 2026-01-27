@@ -27,9 +27,9 @@ function main() {
         totalProcessedInThisRun += 100;
         console.log(`Current Run Progress: ~${totalProcessedInThisRun} emails checked...`);
 
-        // Gemini Free Tier (15 requests per minute)
-        // 60 seconds / 15 requests = 4 seconds per request.
-        Utilities.sleep(4500);
+        // Gemini Free Tier (25 requests per minute)
+        // 60 seconds / 25 requests = 2.5 seconds per request.
+        Utilities.sleep(2500);
     }
 
     // Handle triggers
