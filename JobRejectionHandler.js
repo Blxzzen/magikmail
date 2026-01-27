@@ -1,12 +1,11 @@
 const JobRejectionHandler = {
     LABEL_NAME: "Job Rejection",
-    BATCH_SIZE: 25,
 
     /**
      * calls gemini api to classify a batch of emails
      */
     getAIClassifications: function (snippets) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${ENV.GEMINI_API_KEY}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${ENV.GEMINI_API_KEY}`;
 
         const prompt = `Analyze these ${snippets.length} emails. For each, determine if it is a job application rejection.
     Return ONLY a JSON array of strings: either "REJECT" or "OTHER". 
@@ -27,11 +26,20 @@ const JobRejectionHandler = {
                 payload: JSON.stringify(payload),
                 muteHttpExceptions: true
             });
-            const json = JSON.parse(response.getContentText());
-            return JSON.parse(json.candidates[0].content.parts[0].text);
+
+            const rawResponse = response.getContentText();
+            const json = JSON.parse(rawResponse);
+
+            if (json.candidates && json.candidates[0]) {
+                return JSON.parse(json.candidates[0].content.parts[0].text);
+            }
+
+            // Print raw response for debug
+            console.log("AI failed to return candidates. Raw Response: " + rawResponse);
+            return new Array(snippets.length).fill("OTHER");
         } catch (e) {
             console.error("AI classification failed: " + e);
-            return [];
+            return new Array(snippets.length).fill("OTHER");
         }
     },
 
@@ -39,10 +47,10 @@ const JobRejectionHandler = {
      * fetches emails, makes a gemini call, and applies labels
      */
     handleInbox: function () {
-        console.log("Magikmail: Fetching next batch of 25...");
+        console.log("Magikmail: Fetching next batch of 100...");
         const label = this.getOrCreateLabel();
 
-        // Fetch 25 emails that haven't been processed yet
+        // Fetch 100 emails that haven't been processed yet
         const threads = GmailApp.search(`in:inbox -label:${this.LABEL_NAME}`, 0, this.BATCH_SIZE);
 
         if (threads.length === 0) {
@@ -57,6 +65,11 @@ const JobRejectionHandler = {
         });
 
         const results = this.getAIClassifications(snippets);
+
+        if (!Array.isArray(results) || results.length === 0) {
+            console.warn("Skipping batch due to invalid AI response.");
+            return 0;
+        }
 
         // Apply labels based on what gemini returns
         let rejectionCount = 0;

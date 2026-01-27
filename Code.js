@@ -11,7 +11,7 @@ function main() {
     // Loop until either run out of emails or run out of time
     while (new Date().getTime() - startTime < SIX_MINUTES_MS - SAFETY_BUFFER) {
 
-        // Process one batch of 25
+        // Process one batch of 100
         const rejectionCount = JobRejectionHandler.handleInbox();
 
         // If handleInbox returns 0, it means the search found NO emails
@@ -24,7 +24,7 @@ function main() {
             }
         }
 
-        totalProcessedInThisRun += 25;
+        totalProcessedInThisRun += 100;
         console.log(`Current Run Progress: ~${totalProcessedInThisRun} emails checked...`);
 
         // Gemini Free Tier (15 requests per minute)
@@ -51,7 +51,7 @@ function clearTriggers() {
 }
 
 /**
- * Helper to create the next wake-up call
+ * Helper to create the next call
  */
 function setupTrigger() {
     clearTriggers();
