@@ -1,62 +1,48 @@
 function main() {
     console.log("Magikmail: Starting Batch Scan");
 
-    const startTime = new Date().getTime();
-    const SIX_MINUTES_MS = 6 * 60 * 1000;
-    const SAFETY_BUFFER = 60 * 1000; // Stop 1 minute early to be safe
-
-    let totalProcessedInThisRun = 0;
     let isFinished = false;
 
-    // Loop until either run out of emails or run out of time
-    while (new Date().getTime() - startTime < SIX_MINUTES_MS - SAFETY_BUFFER) {
+    try {
+        const res = JobRejectionHandler.run();
 
-        // Process one batch of 100
-        const rejectionCount = JobRejectionHandler.handleInbox();
+        const processed = Number(res && res.processed ? res.processed : 0);
+        const sentToGroq = Number(res && res.sentToGroq ? res.sentToGroq : 0);
+        const labeled = Number(res && res.labeledRejections ? res.labeledRejections : 0);
 
-        // If handleInbox returns 0, it means the search found NO emails
-        if (rejectionCount === 0) {
-            // Check if done by seeing if the search is empty
-            const testSearch = GmailApp.search("in:inbox -label:Job Rejection", 0, 1);
-            if (testSearch.length === 0) {
-                isFinished = true;
-                break;
-            }
+        console.log(
+            `Current Run Progress: processed=${processed}, sentToGroq=${sentToGroq}, labeled=${labeled}`
+        );
+
+        if (processed === 0) {
+            isFinished = true;
         }
+    } catch (e) {
+        console.error("Magikmail: main() failed: " + e);
 
-        totalProcessedInThisRun += 100;
-        console.log(`Current Run Progress: ~${totalProcessedInThisRun} emails checked...`);
-
-        // Gemini Free Tier (25 requests per minute)
-        // 60 seconds / 25 requests = 2.5 seconds per request.
-        Utilities.sleep(2500);
+        console.log("Scheduling retry in 10 minutes...");
+        setupTrigger(10 * 60 * 1000);
+        return;
     }
 
-    // Handle triggers
     if (!isFinished) {
-        console.log("Time window closing. Scheduling next run in 1 minute...");
-        setupTrigger();
+        console.log("Scheduling next run in 2 minutes...");
+        setupTrigger(2 * 60 * 1000);
     } else {
         console.log("SUCCESS: All emails scanned. Clearing triggers.");
         clearTriggers();
     }
 }
 
-/**
- * Helper to clean up old triggers
- */
 function clearTriggers() {
     const triggers = ScriptApp.getProjectTriggers();
-    triggers.forEach(t => ScriptApp.deleteTrigger(t));
+    triggers.forEach((t) => ScriptApp.deleteTrigger(t));
 }
 
-/**
- * Helper to create the next call
- */
-function setupTrigger() {
+function setupTrigger(afterMs) {
     clearTriggers();
-    ScriptApp.newTrigger('main')
+    ScriptApp.newTrigger("main")
         .timeBased()
-        .after(60 * 1000)
+        .after(afterMs)
         .create();
 }
